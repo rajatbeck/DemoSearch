@@ -104,8 +104,8 @@ public class CitySuggestionProvider extends ContentProvider {
             cursor.addRow(new Object[]{position, city, position});
         } else if (mUriMatcher.match(uri) == ACTION_ALL_SUGGESTION) {
             if (cities != null) {
-//                String query = uri.getLastPathSegment().toUpperCase();
-//                int limit = Integer.parseInt(uri.getQueryParameter(SearchManager.SUGGEST_PARAMETER_LIMIT));
+
+                //Called when the seach action button is clicked
                 String query = selectionArgs[0].toUpperCase();
 
                 Log.d(TAG, "ACTION ALL SUGGESTIONS " + query + " cursor count" + String.valueOf(cursor.getCount()));
