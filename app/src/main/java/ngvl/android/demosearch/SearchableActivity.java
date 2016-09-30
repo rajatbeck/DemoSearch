@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.BaseColumns;
+import android.provider.SearchRecentSuggestions;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.TextView;
@@ -32,13 +33,16 @@ public class SearchableActivity extends AppCompatActivity {
             txt.setText("Searching by: " + query);
             Uri uri = CitySuggestionProvider.CONTENT_URI;
             Log.d(TAG, String.valueOf(uri));
-            mHandler = new MyHandler(this);
-            mHandler.startQuery(0, null, uri, null, null, new String[]{query}, null);
+//            mHandler = new MyHandler(this);
+//            mHandler.startQuery(0, null, uri, null, null, new String[]{query}, null);
 
         } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
             Log.d(TAG, String.valueOf(intent.getData()));
-            mHandler = new MyHandler(this);
-            mHandler.startQuery(0, null, intent.getData(), null, null, null, null);
+            SearchRecentSuggestions suggestions = new SearchRecentSuggestions(this,
+                    CitySuggestionProvider.AUTHORITY, CitySuggestionProvider.MODE);
+            suggestions.saveRecentQuery(String.valueOf(intent.getData()), null);
+//            mHandler = new MyHandler(this);
+//            mHandler.startQuery(0, null, intent.getData(), null, null, null, null);
         }
     }
 

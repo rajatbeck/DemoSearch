@@ -3,6 +3,7 @@ package ngvl.android.demosearch;
 import android.app.SearchManager;
 import android.content.ContentProvider;
 import android.content.ContentValues;
+import android.content.SearchRecentSuggestionsProvider;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.MatrixCursor;
@@ -20,9 +21,9 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 //Test Push
-public class CitySuggestionProvider extends ContentProvider {
+public class CitySuggestionProvider extends SearchRecentSuggestionsProvider {
 
-    private static final String AUTHORITY = "ngvl.android.demosearch.citysuggestion";
+    public static final String AUTHORITY = "ngvl.android.demosearch.citysuggestion";
 
     public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/search_suggest_query");
 
@@ -31,9 +32,15 @@ public class CitySuggestionProvider extends ContentProvider {
     private static final int TYPE_SINGLE_SUGGESTION = 2;
     private static final int ACTION_ALL_SUGGESTION = 3;
     private static final String TAG = CitySuggestionProvider.class.getSimpleName();
+    public final static int MODE = DATABASE_MODE_QUERIES;
+
 
     private UriMatcher mUriMatcher;
     private List<String> cities;
+
+    public CitySuggestionProvider() {
+        setupSuggestions(AUTHORITY, MODE);
+    }
 
     @Override
     public boolean onCreate() {
@@ -136,6 +143,7 @@ public class CitySuggestionProvider extends ContentProvider {
 
     @Override
     public Uri insert(Uri uri, ContentValues values) {
+        Log.d(TAG, "checking" + String.valueOf(values));
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
