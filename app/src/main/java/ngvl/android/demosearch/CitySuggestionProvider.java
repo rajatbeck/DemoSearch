@@ -3,6 +3,7 @@ package ngvl.android.demosearch;
 import android.app.SearchManager;
 import android.content.ContentProvider;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.SearchRecentSuggestionsProvider;
 import android.content.UriMatcher;
 import android.database.Cursor;
@@ -12,16 +13,18 @@ import android.provider.BaseColumns;
 import android.util.Log;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import ngvl.android.demosearch.Model.RecentSuggestionDatabase;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
 //Test Push
-public class CitySuggestionProvider extends SearchRecentSuggestionsProvider {
+public class CitySuggestionProvider extends ContentProvider {
 
     public static final String AUTHORITY = "ngvl.android.demosearch.citysuggestion";
 
@@ -31,19 +34,22 @@ public class CitySuggestionProvider extends SearchRecentSuggestionsProvider {
     private static final int TYPE_ALL_SUGGESTIONS = 1;
     private static final int TYPE_SINGLE_SUGGESTION = 2;
     private static final int ACTION_ALL_SUGGESTION = 3;
-    private static final String TAG = CitySuggestionProvider.class.getSimpleName();
-    public final static int MODE = DATABASE_MODE_QUERIES;
+    private static final String TAG = "CITY_SUGGESTION";
+    private RecentSuggestionDatabase recentSuggestionDatabase;
+//    public final static int MODE = DATABASE_MODE_QUERIES;
 
 
     private UriMatcher mUriMatcher;
     private List<String> cities;
 
-    public CitySuggestionProvider() {
-        setupSuggestions(AUTHORITY, MODE);
-    }
+//    public CitySuggestionProvider() {
+//        setupSuggestions(AUTHORITY, MODE);
+//    }
 
     @Override
     public boolean onCreate() {
+        Context context = getContext();
+        recentSuggestionDatabase = new RecentSuggestionDatabase(context);
         mUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         mUriMatcher.addURI(AUTHORITY, "/#", TYPE_SINGLE_SUGGESTION);
         mUriMatcher.addURI(AUTHORITY, "search_suggest_query/*", TYPE_ALL_SUGGESTIONS);
@@ -54,32 +60,6 @@ public class CitySuggestionProvider extends SearchRecentSuggestionsProvider {
     @Override
     public Cursor query(Uri uri, String[] projection, String selection,
                         String[] selectionArgs, String sortOrder) {
-        if (cities == null || cities.isEmpty()) {
-            Log.d("NGVL", " herer WEB");
-            OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder()
-                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
-                    .build();
-
-            try {
-                Response response = client.newCall(request).execute();
-                String jsonString = response.body().string();
-                JSONArray jsonArray = new JSONArray(jsonString);
-
-                cities = new ArrayList<>();
-
-                int lenght = jsonArray.length();
-                for (int i = 0; i < lenght; i++) {
-                    String city = jsonArray.getString(i);
-                    cities.add(city);
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            Log.d("NGVL", "Cache!");
-        }
 
         MatrixCursor cursor = new MatrixCursor(
                 new String[]{
@@ -89,13 +69,51 @@ public class CitySuggestionProvider extends SearchRecentSuggestionsProvider {
                 }
         );
 
+
         if (mUriMatcher.match(uri) == TYPE_ALL_SUGGESTIONS) {
-            Log.d("uri", String.valueOf(uri));
+
+            OkHttpClient client = new OkHttpClient();
+            Request request = new Request.Builder()
+//                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
+                    .url("http://183.182.85.139:8888/map/api/getTechnicalLevels/?limit=50&compName=" + uri.getLastPathSegment().toUpperCase())
+                    .build();
+
+            try {
+                Response response = client.newCall(request).execute();
+                String jsonString = response.body().string();
+//                JSONArray jsonArray = new JSONArray(jsonString);
+                JSONObject jsonObject = new JSONObject(jsonString);
+                if (jsonObject.getString("status").equals("SUCCESS")) {
+                    JSONArray jsonArray = jsonObject.getJSONArray("data");
+                    cities = new ArrayList<>();
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject jsonObject1 = jsonArray.getJSONObject(i);
+                        cities.add(jsonObject1.getString("comp_name"));
+                    }
+                }
+
+
+//            cities = new ArrayList<>();
+//
+//            int lenght = jsonArray.length();
+//            for (int i = 0; i < lenght; i++) {
+//                String city = jsonArray.getString(i);
+//                cities.add(city);
+//            }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
             if (cities != null) {
                 String query = uri.getLastPathSegment().toUpperCase();
                 int limit = Integer.parseInt(uri.getQueryParameter(SearchManager.SUGGEST_PARAMETER_LIMIT));
-
                 int lenght = cities.size();
+                Log.d(TAG, uri.getPathSegments().get(1));
+                String id = uri.getPathSegments().get(1);
+                Cursor recentCursor = recentSuggestionDatabase.getRecentSearches(id, projection, selection, selectionArgs, sortOrder);
+//                Log.d(TAG, recentCursor.getString(1));
+
                 for (int i = 0; i < lenght && cursor.getCount() < limit; i++) {
                     String city = cities.get(i);
                     if (city.toUpperCase().contains(query)) {
@@ -115,8 +133,6 @@ public class CitySuggestionProvider extends SearchRecentSuggestionsProvider {
 
                 //Called when the seach action button is clicked
                 String query = selectionArgs[0].toUpperCase();
-
-                Log.d(TAG, "ACTION ALL SUGGESTIONS " + query + " cursor count" + String.valueOf(cursor.getCount()));
                 int lenght = cities.size();
                 for (int i = 0; i < lenght && cursor.getCount() < 50; i++) {
                     String city = cities.get(i);
@@ -143,8 +159,16 @@ public class CitySuggestionProvider extends SearchRecentSuggestionsProvider {
 
     @Override
     public Uri insert(Uri uri, ContentValues values) {
-        Log.d(TAG, "checking" + String.valueOf(values));
-        throw new UnsupportedOperationException("Not yet implemented");
+        Log.d(TAG, "insert is called" + String.valueOf(values));
+        try {
+            long id = recentSuggestionDatabase.addNewScript(values);
+            Uri returnUri = CONTENT_URI.withAppendedPath(CONTENT_URI, String.valueOf(id));
+            return returnUri;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+//        throw new UnsupportedOperationException("Not yet");
     }
 
     @Override
@@ -152,4 +176,5 @@ public class CitySuggestionProvider extends SearchRecentSuggestionsProvider {
                       String[] selectionArgs) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
+
 }

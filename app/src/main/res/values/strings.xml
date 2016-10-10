@@ -2,4 +2,11 @@
     <string name="app_name">DemoSearch</string>
     <string name="hint_search">Searching for…</string>
     <string name="search_description">City, Cities</string>
+    <string name="title_activity_dashboard">Dashboard</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="search">Scripts</string>
 </resources>
