@@ -74,8 +74,7 @@ public class CitySuggestionProvider extends ContentProvider {
 
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder()
-//                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
-                    .url("http://183.182.85.139:8888/map/api/getTechnicalLevels/?limit=50&compName=" + uri.getLastPathSegment().toUpperCase())
+                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
                     .build();
 
             try {
