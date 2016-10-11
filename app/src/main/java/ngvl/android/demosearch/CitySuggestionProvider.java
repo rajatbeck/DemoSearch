@@ -50,6 +50,7 @@ public class CitySuggestionProvider extends ContentProvider {
     @Override
     public boolean onCreate() {
         Context context = getContext();
+        cities = new ArrayList<>();
         recentSuggestionDatabase = new RecentSuggestionDatabase(context);
         mUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         mUriMatcher.addURI(AUTHORITY, "/#", TYPE_SINGLE_SUGGESTION);
@@ -74,19 +75,34 @@ public class CitySuggestionProvider extends ContentProvider {
 
         if (mUriMatcher.match(uri) == TYPE_ALL_SUGGESTIONS) {
 
+            int startPosition = 0;
+            Cursor recentCursor = null;
+
+            cities = new ArrayList<>();
+            cities.clear();
+            cities.add("0");
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder()
 //                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
                     .build();
 
             try {
+                String id = uri.getPathSegments().get(1);
+                recentCursor = recentSuggestionDatabase.getRecentSearches(id, projection, selection, selectionArgs, sortOrder);
+                startPosition = recentCursor.getCount();
+                if (startPosition != 0) {
+                    recentCursor.moveToFirst();
+                    while (!recentCursor.isAfterLast()) {
+                        cities.add(recentCursor.getString(recentCursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                        recentCursor.moveToNext();
+                    }
+                }
+
                 Response response = client.newCall(request).execute();
                 String jsonString = response.body().string();
-//                JSONArray jsonArray = new JSONArray(jsonString);
                 JSONObject jsonObject = new JSONObject(jsonString);
                 if (jsonObject.getString("status").equals("SUCCESS")) {
                     JSONArray jsonArray = jsonObject.getJSONArray("data");
-                    cities = new ArrayList<>();
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject jsonObject1 = jsonArray.getJSONObject(i);
                         cities.add(jsonObject1.getString("comp_name"));
@@ -99,26 +115,24 @@ public class CitySuggestionProvider extends ContentProvider {
             if (cities != null) {
                 String query = uri.getLastPathSegment().toUpperCase();
                 int limit = Integer.parseInt(uri.getQueryParameter(SearchManager.SUGGEST_PARAMETER_LIMIT));
-                int lenght = cities.size();
-                String id = uri.getPathSegments().get(1);
-                Cursor recentCursor = recentSuggestionDatabase.getRecentSearches(id, projection, selection, selectionArgs, sortOrder);
-
-
-                for (int i = 0; i < lenght && cursor.getCount() < limit; i++) {
+                int length = cities.size();
+//                if (startPosition == 0) startPosition = 1;
+                for (int i = startPosition + 1; i < length && cursor.getCount() < limit; i++) {
                     String city = cities.get(i);
                     if (city.toUpperCase().contains(query)) {
                         cursor.addRow(new Object[]{i, city, i, R.drawable.ic_search_white_24dp});
                     }
                 }
                 Cursor[] mergeCursor = new Cursor[]{recentCursor, cursor};
-                Cursor cursor1 = new MergeCursor(mergeCursor);
-                cursor1.moveToFirst();
-                cities.clear();
-                while (cursor1.isAfterLast() == false) {
-                    cities.add(cursor1.getString(cursor1.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
-                    cursor1.moveToNext();
-                }
-                Log.d(TAG, String.valueOf(cities));
+//                Cursor cursor1 = new MergeCursor(mergeCursor);
+             /*   cursor1.moveToFirst();
+                if (recentCursor.getCount() != 0) {
+                    cities.clear();
+                    while (cursor1.isAfterLast() == false) {
+                        cities.add(cursor1.getString(cursor1.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                        cursor1.moveToNext();
+                    }
+                }*/
                 return new MergeCursor(mergeCursor);
             }
         } else if (mUriMatcher.match(uri) == TYPE_SINGLE_SUGGESTION) {
@@ -126,19 +140,28 @@ public class CitySuggestionProvider extends ContentProvider {
             Log.d("Single Suggestion", cities.toString());
             String city = cities.get(position);
             cursor.addRow(new Object[]{position, city, position, R.drawable.ic_search_white_24dp});
-//TODO:Reslove conflic in click of history and suggestions from server
         } else if (mUriMatcher.match(uri) == ACTION_ALL_SUGGESTION) {
             if (cities != null) {
 
                 //Called when the search action button is clicked
+
                 if (selectionArgs == null) {
 //                    String id = uri.getPathSegments().get(0);
                     Cursor recentCursor = recentSuggestionDatabase.getRecentSearches(null, projection, selection, selectionArgs, sortOrder);
+
+                    Log.d(TAG, "searchbox is empty" + String.valueOf(recentCursor.getCount()));
+                    cities = new ArrayList<>();
+                    cities.add("0");
+                    while (!recentCursor.isAfterLast()) {
+                        cities.add(recentCursor.getString(recentCursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                        recentCursor.moveToNext();
+                    }
+                    recentCursor.moveToLast();
                     return recentCursor;
                 } else {
                     String query = selectionArgs[0].toUpperCase();
-                    int lenght = cities.size();
-                    for (int i = 0; i < lenght && cursor.getCount() < 50; i++) {
+                    int length = cities.size();
+                    for (int i = 1; i < length && cursor.getCount() < 50; i++) {
                         String city = cities.get(i);
                         if (city.toUpperCase().contains(query)) {
                             cursor.addRow(new Object[]{i, city, i, R.drawable.ic_search_white_24dp});
