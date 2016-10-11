@@ -80,7 +80,7 @@ public class CitySuggestionProvider extends ContentProvider {
             cities.clear();
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder()
-                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
+//                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
                     .build();
 
             try {
@@ -157,7 +157,7 @@ public class CitySuggestionProvider extends ContentProvider {
                     int length = cities.size();
                     int length2 = suggestionTrack.size();
                     for (int i = 0; i < length2 && cursor.getCount() < 50; i++) {
-                        String city = cities.get(i);
+//                        String city = cities.get(i);
                         String city2 = suggestionTrack.get(i);
                         if (city2.toUpperCase().contains(query)) {
                             cursor.addRow(new Object[]{i, city2, i, R.drawable.ic_search_white_24dp});

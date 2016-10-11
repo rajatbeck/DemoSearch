@@ -10,12 +10,17 @@ import android.os.Bundle;
 import android.provider.BaseColumns;
 import android.provider.SearchRecentSuggestions;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
 
+import ngvl.android.demosearch.Adapter.SearchResultAdapter;
 import ngvl.android.demosearch.Model.RecentSuggestionDatabase;
 
 public class SearchableActivity extends AppCompatActivity {
@@ -24,14 +29,15 @@ public class SearchableActivity extends AppCompatActivity {
     private static boolean SEARCH_SUGGESTION_IS_CLICKED = false;
     private static final String TAG = SearchableActivity.class.getSimpleName();
     private MyHandler mHandler;
-    private TextView txt;
+    private RecyclerView mRecyclerView;
     private Intent intent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_searchable);
-        txt = (TextView) findViewById(R.id.textView);
+        mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(SearchableActivity.this));
 
         intent = getIntent();
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
@@ -57,14 +63,12 @@ public class SearchableActivity extends AppCompatActivity {
         }
     }
 
-    public void updateText(String text) {
-        txt.setText(text);
-    }
 
     class MyHandler extends AsyncQueryHandler {
         private final String TAG = MyHandler.class.getSimpleName();
         // avoid memory leak
         WeakReference<SearchableActivity> activity;
+        List<String> scriptList = new ArrayList<>();
 
         public MyHandler(SearchableActivity searchableActivity) {
             super(searchableActivity.getContentResolver());
@@ -87,11 +91,16 @@ public class SearchableActivity extends AppCompatActivity {
             long id = cursor.getLong(cursor.getColumnIndex(BaseColumns._ID));
             String text = cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1));
             long dataId = cursor.getLong(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_INTENT_DATA_ID));
-
+            Log.d(TAG, String.valueOf(cursor.getCount()));
+            while (!cursor.isAfterLast()) {
+                scriptList.add(cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                cursor.moveToNext();
+            }
             cursor.close();
 
             if (activity.get() != null) {
-                activity.get().updateText("onQueryComplete: " + id + " / " + text + " / ");
+                SearchResultAdapter searchResultAdapter = new SearchResultAdapter(scriptList);
+                mRecyclerView.setAdapter(searchResultAdapter);
             }
         }
     }
