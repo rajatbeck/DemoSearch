@@ -24,7 +24,6 @@ dependencies {
 
     compile 'com.android.support:appcompat-v7:24.2.1'
     compile 'com.squareup.okhttp3:okhttp:3.0.1'
-    compile 'com.lapism:searchview:3.7'
     compile 'com.android.support:design:24.2.1'
     testCompile 'junit:junit:4.12'
 }

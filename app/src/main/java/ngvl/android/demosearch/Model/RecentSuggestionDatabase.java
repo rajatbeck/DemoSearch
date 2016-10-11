@@ -81,7 +81,7 @@ public class RecentSuggestionDatabase extends SQLiteOpenHelper {
                 selectionArgs,
                 null,
                 null,
-                sortOrder);
+                sortOrder + " DESC", "2");
         cursor.moveToFirst();
         return cursor;
     }

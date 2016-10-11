@@ -17,6 +17,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import ngvl.android.demosearch.Model.RecentSuggestionDatabase;
@@ -42,10 +43,7 @@ public class CitySuggestionProvider extends ContentProvider {
 
     private UriMatcher mUriMatcher;
     private List<String> cities;
-
-//    public CitySuggestionProvider() {
-//        setupSuggestions(AUTHORITY, MODE);
-//    }
+    private HashMap<Integer, String> suggestionTrack = new HashMap<>();
 
     @Override
     public boolean onCreate() {
@@ -75,29 +73,30 @@ public class CitySuggestionProvider extends ContentProvider {
 
         if (mUriMatcher.match(uri) == TYPE_ALL_SUGGESTIONS) {
 
-            int startPosition = 0;
             Cursor recentCursor = null;
 
             cities = new ArrayList<>();
+            suggestionTrack.clear();
             cities.clear();
-            cities.add("0");
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder()
-//                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
+                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
                     .build();
 
             try {
                 String id = uri.getPathSegments().get(1);
                 recentCursor = recentSuggestionDatabase.getRecentSearches(id, projection, selection, selectionArgs, sortOrder);
-                startPosition = recentCursor.getCount();
-                if (startPosition != 0) {
+
+                if (recentCursor.getCount() != 0) {
                     recentCursor.moveToFirst();
                     while (!recentCursor.isAfterLast()) {
-                        cities.add(recentCursor.getString(recentCursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                        Log.d(TAG, String.valueOf(recentCursor.getInt(recentCursor.getColumnIndex(BaseColumns._ID))));
+//                        cities.add(recentCursor.getInt(recentCursor.getColumnIndex(BaseColumns._ID)), recentCursor.getString(recentCursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                        suggestionTrack.put(recentCursor.getInt(recentCursor.getColumnIndex(BaseColumns._ID)), recentCursor.getString(recentCursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
                         recentCursor.moveToNext();
+
                     }
                 }
-
                 Response response = client.newCall(request).execute();
                 String jsonString = response.body().string();
                 JSONObject jsonObject = new JSONObject(jsonString);
@@ -116,30 +115,25 @@ public class CitySuggestionProvider extends ContentProvider {
                 String query = uri.getLastPathSegment().toUpperCase();
                 int limit = Integer.parseInt(uri.getQueryParameter(SearchManager.SUGGEST_PARAMETER_LIMIT));
                 int length = cities.size();
-//                if (startPosition == 0) startPosition = 1;
-                for (int i = startPosition + 1; i < length && cursor.getCount() < limit; i++) {
+                for (int i = 0, j = 0; i < length && cursor.getCount() < limit; i++, j++) {
                     String city = cities.get(i);
                     if (city.toUpperCase().contains(query)) {
-                        cursor.addRow(new Object[]{i, city, i, R.drawable.ic_search_white_24dp});
+                        while (suggestionTrack.containsKey(j)) {
+                            j++;
+                        }
+                        suggestionTrack.put(j, city);
+                        cursor.addRow(new Object[]{j, city, j, R.drawable.ic_search_white_24dp});
                     }
                 }
                 Cursor[] mergeCursor = new Cursor[]{recentCursor, cursor};
-//                Cursor cursor1 = new MergeCursor(mergeCursor);
-             /*   cursor1.moveToFirst();
-                if (recentCursor.getCount() != 0) {
-                    cities.clear();
-                    while (cursor1.isAfterLast() == false) {
-                        cities.add(cursor1.getString(cursor1.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
-                        cursor1.moveToNext();
-                    }
-                }*/
                 return new MergeCursor(mergeCursor);
             }
         } else if (mUriMatcher.match(uri) == TYPE_SINGLE_SUGGESTION) {
             int position = Integer.parseInt(uri.getLastPathSegment());
-            Log.d("Single Suggestion", cities.toString());
-            String city = cities.get(position);
-            cursor.addRow(new Object[]{position, city, position, R.drawable.ic_search_white_24dp});
+            Log.d("Single Suggestion", String.valueOf(suggestionTrack));
+//            String city = cities.get(position);
+            String ciy2 = suggestionTrack.get(position);
+            cursor.addRow(new Object[]{position, ciy2, position, R.drawable.ic_search_white_24dp});
         } else if (mUriMatcher.match(uri) == ACTION_ALL_SUGGESTION) {
             if (cities != null) {
 
@@ -149,11 +143,11 @@ public class CitySuggestionProvider extends ContentProvider {
 //                    String id = uri.getPathSegments().get(0);
                     Cursor recentCursor = recentSuggestionDatabase.getRecentSearches(null, projection, selection, selectionArgs, sortOrder);
 
-                    Log.d(TAG, "searchbox is empty" + String.valueOf(recentCursor.getCount()));
-                    cities = new ArrayList<>();
-                    cities.add("0");
+//                    cities = new ArrayList<>();
+//                    cities.add("0");
                     while (!recentCursor.isAfterLast()) {
-                        cities.add(recentCursor.getString(recentCursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+//                        cities.add(recentCursor.getString(recentCursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                        suggestionTrack.put(recentCursor.getInt(recentCursor.getColumnIndex(BaseColumns._ID)), recentCursor.getString(recentCursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
                         recentCursor.moveToNext();
                     }
                     recentCursor.moveToLast();
@@ -161,10 +155,12 @@ public class CitySuggestionProvider extends ContentProvider {
                 } else {
                     String query = selectionArgs[0].toUpperCase();
                     int length = cities.size();
-                    for (int i = 1; i < length && cursor.getCount() < 50; i++) {
+                    int length2 = suggestionTrack.size();
+                    for (int i = 0; i < length2 && cursor.getCount() < 50; i++) {
                         String city = cities.get(i);
-                        if (city.toUpperCase().contains(query)) {
-                            cursor.addRow(new Object[]{i, city, i, R.drawable.ic_search_white_24dp});
+                        String city2 = suggestionTrack.get(i);
+                        if (city2.toUpperCase().contains(query)) {
+                            cursor.addRow(new Object[]{i, city2, i, R.drawable.ic_search_white_24dp});
                             Log.d("Action Suggestion", query + String.valueOf(cursor.getCount()) + cities.toString());
 
                         }
