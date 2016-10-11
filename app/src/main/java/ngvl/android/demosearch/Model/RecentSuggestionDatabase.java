@@ -37,7 +37,7 @@ public class RecentSuggestionDatabase extends SQLiteOpenHelper {
 
 
     public RecentSuggestionDatabase(Context context) {
-        super(context, DATABASE_NAME, null, 4);
+        super(context, DATABASE_NAME, null, 5);
         mAliasMap = new HashMap<>();
         mAliasMap.put(BaseColumns._ID, KEY_ROW_ID + " as " + BaseColumns._ID);
         mAliasMap.put(SearchManager.SUGGEST_COLUMN_TEXT_1, KEY_NAME + " as " + SearchManager.SUGGEST_COLUMN_TEXT_1);
@@ -48,6 +48,7 @@ public class RecentSuggestionDatabase extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         sqLiteDatabase.execSQL(DATABASE_CREATE);
+
     }
 
     @Override
@@ -66,7 +67,7 @@ public class RecentSuggestionDatabase extends SQLiteOpenHelper {
             sqLiteQueryBuilder.appendWhere(KEY_NAME + " LIKE '%" + id + "%'");
         }
         if (sortOrder == null || sortOrder == "") {
-            sortOrder = KEY_NAME;
+            sortOrder = KEY_ROW_ID;
         }
         Cursor cursor = sqLiteQueryBuilder.query(getReadableDatabase(),
                 new String[]
@@ -81,7 +82,7 @@ public class RecentSuggestionDatabase extends SQLiteOpenHelper {
                 null,
                 null,
                 sortOrder);
-//        cursor.moveToFirst();
+        cursor.moveToFirst();
         return cursor;
     }
 
