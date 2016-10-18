@@ -37,7 +37,7 @@ public class RecentSuggestionDatabase extends SQLiteOpenHelper {
 
 
     public RecentSuggestionDatabase(Context context) {
-        super(context, DATABASE_NAME, null, 5);
+        super(context, DATABASE_NAME, null, 6);
         mAliasMap = new HashMap<>();
         mAliasMap.put(BaseColumns._ID, KEY_ROW_ID + " as " + BaseColumns._ID);
         mAliasMap.put(SearchManager.SUGGEST_COLUMN_TEXT_1, KEY_NAME + " as " + SearchManager.SUGGEST_COLUMN_TEXT_1);

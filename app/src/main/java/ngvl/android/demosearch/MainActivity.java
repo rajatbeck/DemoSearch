@@ -14,11 +14,17 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity
         implements SearchView.OnQueryTextListener {
+    private SearchView searchView;
+
+    private static final String KEY_SEARCH = "key_search";
+    private String mSearchString;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        if (savedInstanceState != null)
+            mSearchString = savedInstanceState.getString(KEY_SEARCH);
     }
 
     @Override
@@ -26,8 +32,13 @@ public class MainActivity extends AppCompatActivity
         getMenuInflater().inflate(R.menu.menu_search, menu);
 
         MenuItem searchItem = menu.findItem(R.id.search);
-        SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
+        searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
         searchView.setOnQueryTextListener(this);
+        if (mSearchString != null) {
+            searchItem.expandActionView();
+            searchView.setQuery(mSearchString, true);
+            searchView.clearFocus();
+        }
 
         SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
         searchView.setSearchableInfo(searchManager.getSearchableInfo(
@@ -42,11 +53,11 @@ public class MainActivity extends AppCompatActivity
         super.onNewIntent(intent);
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             String query = intent.getStringExtra(SearchManager.QUERY);
-            Toast.makeText(this, "Searching by: "+ query, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Searching by: " + query, Toast.LENGTH_SHORT).show();
 
         } else if (Intent.ACTION_VIEW.equals(intent.getAction())) {
             String uri = intent.getDataString();
-            Toast.makeText(this, "Suggestion: "+ uri, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Suggestion: " + uri, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -60,5 +71,13 @@ public class MainActivity extends AppCompatActivity
     public boolean onQueryTextChange(String newText) {
         // User changed the text
         return false;
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        String query = searchView.getQuery().toString().trim();
+        outState.putString(KEY_SEARCH, query);
+
     }
 }

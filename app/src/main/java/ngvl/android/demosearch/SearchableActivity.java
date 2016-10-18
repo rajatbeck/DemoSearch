@@ -82,11 +82,13 @@ public class SearchableActivity extends AppCompatActivity {
 
             cursor.moveToFirst();
             if (SEARCH_SUGGESTION_IS_CLICKED) {
-                Log.d(TAG, cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
-                ContentValues contentValues = new ContentValues();
-                contentValues.put(RecentSuggestionDatabase.KEY_NAME, cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
-                contentValues.put(RecentSuggestionDatabase.KEY_ICON, R.drawable.ic_restore_white_24dp);
-                getContentResolver().insert(CitySuggestionProvider.CONTENT_URI, contentValues);
+                if (cursor.getCount() == 1) {
+                    Log.d(TAG, cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                    ContentValues contentValues = new ContentValues();
+                    contentValues.put(RecentSuggestionDatabase.KEY_NAME, cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                    contentValues.put(RecentSuggestionDatabase.KEY_ICON, R.drawable.ic_restore_white_24dp);
+                    getContentResolver().insert(CitySuggestionProvider.CONTENT_URI, contentValues);
+                }
             }
             long id = cursor.getLong(cursor.getColumnIndex(BaseColumns._ID));
             String text = cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1));
