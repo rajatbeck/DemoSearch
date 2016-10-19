@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import ngvl.android.demosearch.Model.RecentSuggestionDatabase;
+import ngvl.android.demosearch.Pojo.Levels;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -46,12 +47,14 @@ public class CitySuggestionProvider extends ContentProvider {
 
     private UriMatcher mUriMatcher;
     private List<String> cities;
+    private List<Levels> levelsList;
     private HashMap<Integer, String> suggestionTrack = new HashMap<>();
 
     @Override
     public boolean onCreate() {
         Context context = getContext();
         cities = new ArrayList<>();
+        levelsList = new ArrayList<>();
         recentSuggestionDatabase = new RecentSuggestionDatabase(context);
         mUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         mUriMatcher.addURI(AUTHORITY, "/#", TYPE_SINGLE_SUGGESTION);
@@ -77,13 +80,15 @@ public class CitySuggestionProvider extends ContentProvider {
         if (mUriMatcher.match(uri) == TYPE_ALL_SUGGESTIONS) {
 
             Cursor recentCursor = null;
-
             cities = new ArrayList<>();
+            levelsList = new ArrayList<>();
             suggestionTrack.clear();
+            levelsList.clear();
             cities.clear();
             OkHttpClient client = new OkHttpClient();
             Request request = new Request.Builder()
 //                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
+                    .url("http:// /?limit=50&compName=" + uri.getLastPathSegment().toUpperCase())
                     .build();
 
             try {
@@ -107,6 +112,14 @@ public class CitySuggestionProvider extends ContentProvider {
                     JSONArray jsonArray = jsonObject.getJSONArray("data");
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject jsonObject1 = jsonArray.getJSONObject(i);
+                        Levels levels = new Levels();
+                        levels.setCompanyName(jsonObject1.getString("comp_name"));
+                        levels.setCompCode(jsonObject1.getString("comp"));
+                        levels.setR1(jsonObject1.getString("r1"));
+                        levels.setR2(jsonObject1.getString("r2"));
+                        levels.setS1(jsonObject1.getString("s1"));
+                        levels.setS2(jsonObject1.getString("s2"));
+                        levelsList.add(levels);
                         cities.add(jsonObject1.getString("comp_name"));
                     }
                 }
@@ -134,7 +147,18 @@ public class CitySuggestionProvider extends ContentProvider {
         } else if (mUriMatcher.match(uri) == TYPE_SINGLE_SUGGESTION) {
             int position = Integer.parseInt(uri.getLastPathSegment());
             Log.d("Single Suggestion", String.valueOf(suggestionTrack) + String.valueOf(cities));
-//            String city = cities.get(position);
+
+            MatrixCursor matrixCursor = new MatrixCursor(new String[]
+                    {
+                            "comp_name",
+                            "comp",
+                            "s1",
+                            "s2",
+                            "r1",
+                            "r2",
+                            "is_history"
+                    });
+
             String ciy2 = suggestionTrack.get(position);
             int entryExits = 0;
             if (cities != null) {
@@ -142,6 +166,7 @@ public class CitySuggestionProvider extends ContentProvider {
                     OkHttpClient client = new OkHttpClient();
                     Request request = new Request.Builder()
 //                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
+                            .url("http:// /?limit=50&compName=" + ciy2)
                             .build();
 
                     Response response = null;
@@ -155,18 +180,28 @@ public class CitySuggestionProvider extends ContentProvider {
                             for (int i = 0; i < jsonArray.length(); i++) {
                                 JSONObject jsonObject1 = jsonArray.getJSONObject(i);
                                 cities.add(jsonObject1.getString("comp_name"));
+                                Levels levels = new Levels();
+                                levels.setCompanyName(jsonObject1.getString("comp_name"));
+                                levels.setCompCode(jsonObject1.getString("comp"));
+                                levels.setR1(jsonObject1.getString("r1"));
+                                levels.setR2(jsonObject1.getString("r2"));
+                                levels.setS1(jsonObject1.getString("s1"));
+                                levels.setS2(jsonObject1.getString("s2"));
+                                levelsList.add(levels);
                             }
                         }
                         for (int i = 0; i < cities.size(); i++) {
                             if (cities.get(i).equals(suggestionTrack.get(position))) {
-                                cursor.addRow(new Object[]{i, cities.get(i), i, R.drawable.ic_search_white_24dp});
+                                matrixCursor.addRow(new Object[]{levelsList.get(i).getCompanyName(), levelsList.get(i).getCompCode(), levelsList.get(i).getS1(), levelsList.get(i).getS2(), levelsList.get(i).getR1(), levelsList.get(i).getR2(), "0"});
+//                                cursor.addRow(new Object[]{i, cities.get(i), i, R.drawable.ic_search_white_24dp});
                                 entryExits = 1;
                                 break;
                             }
                         }
                         if (entryExits != 1) {
                             for (int i = 0; i < cities.size(); i++) {
-                                cursor.addRow(new Object[]{i, cities.get(i), i, R.drawable.ic_search_white_24dp});
+                                matrixCursor.addRow(new Object[]{levelsList.get(i).getCompanyName(), levelsList.get(i).getCompCode(), levelsList.get(i).getS1(), levelsList.get(i).getS2(), levelsList.get(i).getR1(), levelsList.get(i).getR2(), "1"});
+//                                cursor.addRow(new Object[]{i, cities.get(i), i, R.drawable.ic_search_white_24dp});
                             }
                         }
 
@@ -176,20 +211,24 @@ public class CitySuggestionProvider extends ContentProvider {
                         e.printStackTrace();
                     }
 
+
                 } else {
                     for (int i = 0; i < cities.size(); i++) {
                         if (cities.get(i).equals(suggestionTrack.get(position))) {
-                            cursor.addRow(new Object[]{i, cities.get(i), i, R.drawable.ic_search_white_24dp});
+                            matrixCursor.addRow(new Object[]{levelsList.get(i).getCompanyName(), levelsList.get(i).getCompCode(), levelsList.get(i).getS1(), levelsList.get(i).getS2(), levelsList.get(i).getR1(), levelsList.get(i).getR2(), "0"});
+//                            cursor.addRow(new Object[]{i, cities.get(i), i, R.drawable.ic_search_white_24dp});
                             entryExits = 1;
                             break;
                         }
                     }
                     if (entryExits != 1) {
                         for (int i = 0; i < cities.size(); i++) {
-                            cursor.addRow(new Object[]{i, cities.get(i), i, R.drawable.ic_search_white_24dp});
+                            matrixCursor.addRow(new Object[]{levelsList.get(i).getCompanyName(), levelsList.get(i).getCompCode(), levelsList.get(i).getS1(), levelsList.get(i).getS2(), levelsList.get(i).getR1(), levelsList.get(i).getR2(), "1"});
+//                            cursor.addRow(new Object[]{i, cities.get(i), i, R.drawable.ic_search_white_24dp});
                         }
                     }
                 }
+                return matrixCursor;
             }
 
 //            cursor.addRow(new Object[]{position, ciy2, position, R.drawable.ic_search_white_24dp});
@@ -198,12 +237,19 @@ public class CitySuggestionProvider extends ContentProvider {
 
                 //Called when the search action button is clicked
 
+                MatrixCursor matrixCursor = new MatrixCursor(new String[]
+                        {
+                                "comp_name",
+                                "comp",
+                                "s1",
+                                "s2",
+                                "r1",
+                                "r2"
+                        });
+                cities.clear();
                 if (selectionArgs == null) {
-//                    String id = uri.getPathSegments().get(0);
-                    Cursor recentCursor = recentSuggestionDatabase.getRecentSearches(null, projection, selection, selectionArgs, sortOrder);
 
-//                    cities = new ArrayList<>();
-//                    cities.add("0");
+                    Cursor recentCursor = recentSuggestionDatabase.getRecentSearches(null, projection, selection, selectionArgs, sortOrder);
                     while (!recentCursor.isAfterLast()) {
 //                        cities.add(recentCursor.getString(recentCursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
                         suggestionTrack.put(recentCursor.getInt(recentCursor.getColumnIndex(BaseColumns._ID)), recentCursor.getString(recentCursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
@@ -230,6 +276,7 @@ public class CitySuggestionProvider extends ContentProvider {
                     OkHttpClient client = new OkHttpClient();
                     Request request = new Request.Builder()
 //                    .url("https://dl.dropboxusercontent.com/u/6802536/cidades.json")
+                            .url("http:// /?limit=50&compName=" + query)
                             .build();
 
                     Response response = null;
@@ -243,9 +290,19 @@ public class CitySuggestionProvider extends ContentProvider {
                             for (int i = 0; i < jsonArray.length(); i++) {
                                 JSONObject jsonObject1 = jsonArray.getJSONObject(i);
                                 cities.add(jsonObject1.getString("comp_name"));
-                                cursor.addRow(new Object[]{i, cities.get(i), i, R.drawable.ic_search_white_24dp});
+                                Levels levels = new Levels();
+                                levels.setCompanyName(jsonObject1.getString("comp_name"));
+                                levels.setCompCode(jsonObject1.getString("comp"));
+                                levels.setR1(jsonObject1.getString("r1"));
+                                levels.setR2(jsonObject1.getString("r2"));
+                                levels.setS1(jsonObject1.getString("s1"));
+                                levels.setS2(jsonObject1.getString("s2"));
+                                levelsList.add(levels);
+                                matrixCursor.addRow(new Object[]{levelsList.get(i).getCompanyName(), levelsList.get(i).getCompCode(), levelsList.get(i).getS1(), levelsList.get(i).getS2(), levelsList.get(i).getR1(), levelsList.get(i).getR2()});
+//                                cursor.addRow(new Object[]{i, cities.get(i), i, R.drawable.ic_search_white_24dp});
 
                             }
+                            return matrixCursor;
                         }
 
                     } catch (IOException e) {

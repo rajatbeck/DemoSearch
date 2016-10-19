@@ -82,24 +82,25 @@ public class SearchableActivity extends AppCompatActivity {
 
             cursor.moveToFirst();
             if (SEARCH_SUGGESTION_IS_CLICKED) {
-                if (cursor.getCount() == 1) {
-                    Log.d(TAG, cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                if (cursor.getString(cursor.getColumnIndex("is_history")).equals("0")) {
+                    Log.d(TAG, cursor.getString(cursor.getColumnIndex("comp_name")));
                     ContentValues contentValues = new ContentValues();
-                    contentValues.put(RecentSuggestionDatabase.KEY_NAME, cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                   /* contentValues.put(RecentSuggestionDatabase.KEY_NAME, cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                    contentValues.put(RecentSuggestionDatabase.KEY_ICON, R.drawable.ic_restore_white_24dp);*/
+                    contentValues.put(RecentSuggestionDatabase.KEY_NAME, cursor.getString(cursor.getColumnIndex("comp_name")));
                     contentValues.put(RecentSuggestionDatabase.KEY_ICON, R.drawable.ic_restore_white_24dp);
                     getContentResolver().insert(CitySuggestionProvider.CONTENT_URI, contentValues);
                 }
             }
-            long id = cursor.getLong(cursor.getColumnIndex(BaseColumns._ID));
+           /* long id = cursor.getLong(cursor.getColumnIndex(BaseColumns._ID));
             String text = cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1));
-            long dataId = cursor.getLong(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_INTENT_DATA_ID));
+            long dataId = cursor.getLong(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_INTENT_DATA_ID));*/
             Log.d(TAG, String.valueOf(cursor.getCount()));
             while (!cursor.isAfterLast()) {
-                scriptList.add(cursor.getString(cursor.getColumnIndex(SearchManager.SUGGEST_COLUMN_TEXT_1)));
+                scriptList.add(cursor.getString(cursor.getColumnIndex("comp_name")));
                 cursor.moveToNext();
             }
             cursor.close();
-
             if (activity.get() != null) {
                 SearchResultAdapter searchResultAdapter = new SearchResultAdapter(scriptList);
                 mRecyclerView.setAdapter(searchResultAdapter);
@@ -107,5 +108,4 @@ public class SearchableActivity extends AppCompatActivity {
         }
     }
 
-    ;
 }
